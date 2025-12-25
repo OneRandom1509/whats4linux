@@ -69,7 +69,7 @@ function App() {
     <div className={`min-h-screen ${theme === 'dark' ? 'bg-black text-white' : 'bg-light-secondary text-light-text'} relative`}>
         <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
             {notifications.map(n => (
-                <div key={n.id} className="bg-green-600 text-white px-4 py-2 rounded shadow-lg">
+                <div key={n.id} className="bg-zinc-800 text-white px-4 py-2 rounded shadow-lg">
                     {n.message}
                 </div>
             ))}
