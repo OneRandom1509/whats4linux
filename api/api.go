@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 
 	"github.com/gen2brain/beeep"
-	"github.com/lugvitc/whats4linux/internal/mstore"
 	"github.com/lugvitc/whats4linux/internal/misc"
 	"github.com/lugvitc/whats4linux/internal/settings"
 	"github.com/lugvitc/whats4linux/internal/store"
@@ -224,7 +223,7 @@ func (a *Api) DownloadMedia(chatJID string, messageID string) (string, error) {
 			newPath, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
 				DefaultDirectory: downloadsDir,
 				DefaultFilename:  fileName,
-				Title:           "File already exists. Save as...",
+				Title:            "File already exists. Save as...",
 				Filters: []runtime.FileFilter{
 					{
 						DisplayName: "Media Files",
@@ -378,9 +377,9 @@ func (a *Api) SendMessage(chatJID string, content MessageContent) (string, error
 		// Create image message
 		mimeType := "image/jpeg"
 		imageMsg := &waE2E.ImageMessage{
-			Mimetype:       &mimeType,
-			Caption:        &content.Text,
-			JPEGThumbnail:  nil, // We'll let WhatsApp generate the thumbnail
+			Mimetype:      &mimeType,
+			Caption:       &content.Text,
+			JPEGThumbnail: nil, // We'll let WhatsApp generate the thumbnail
 		}
 
 		// Upload the image
@@ -409,9 +408,9 @@ func (a *Api) SendMessage(chatJID string, content MessageContent) (string, error
 		// Create video message
 		mimeType := "video/mp4"
 		videoMsg := &waE2E.VideoMessage{
-			Mimetype:       &mimeType,
-			Caption:        &content.Text,
-			JPEGThumbnail:  nil, // We'll let WhatsApp generate the thumbnail
+			Mimetype:      &mimeType,
+			Caption:       &content.Text,
+			JPEGThumbnail: nil, // We'll let WhatsApp generate the thumbnail
 		}
 
 		// Upload the video
@@ -468,7 +467,7 @@ func (a *Api) SendMessage(chatJID string, content MessageContent) (string, error
 
 		// Create document message
 		mimeType := "application/pdf" // Default, should be detected
-		fileName := "document.pdf"     // Default, should be provided
+		fileName := "document.pdf"    // Default, should be provided
 		documentMsg := &waE2E.DocumentMessage{
 			Mimetype: &mimeType,
 			FileName: &fileName,
@@ -555,5 +554,5 @@ func (a *Api) mainEventHandler(evt interface{}) {
 	default:
 		// Ignore other events for now
 	}
-	
+
 }
