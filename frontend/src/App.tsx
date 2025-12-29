@@ -7,6 +7,7 @@ import { LoginScreen } from "./screens/LoginScreen"
 import { SettingsScreen } from "./screens/SettingsScreen"
 import darkModeMoon from "./assets/svgs/dark_mode_moon.svg"
 import lightModeSun from "./assets/svgs/light_mode.svg"
+import { useThemeStore, useUIStore } from "./store"
 
 type Screen = "login" | "chats" | "settings"
 
@@ -14,14 +15,15 @@ function App() {
   const [screen, setScreen] = useState<Screen>("login")
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const [status, setStatus] = useState<string>("waiting")
-  const [theme, setTheme] = useState<"light" | "dark">("light")
-  const [notifications, setNotifications] = useState<{ id: number; message: string }[]>([])
+
+  const { theme, toggleTheme, setTheme } = useThemeStore()
+  const { notifications, addNotification, removeNotification } = useUIStore()
 
   useEffect(() => {
     if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
       setTheme("dark")
     }
-  }, [])
+  }, [setTheme])
 
   useEffect(() => {
     if (theme === "dark") {
@@ -30,10 +32,6 @@ function App() {
       document.documentElement.classList.remove("dark")
     }
   }, [theme])
-
-  const toggleTheme = () => {
-    setTheme(prev => (prev === "light" ? "dark" : "light"))
-  }
 
   useEffect(() => {
     Login()
@@ -74,10 +72,12 @@ function App() {
     })
 
     const unsubDownload = EventsOn("download:complete", (fileName: string) => {
-      const id = Date.now()
-      setNotifications(prev => [...prev, { id, message: `Downloaded: ${fileName}` }])
+      addNotification(`Downloaded: ${fileName}`)
       setTimeout(() => {
-        setNotifications(prev => prev.filter(n => n.id !== id))
+        const notification = notifications.find(n => n.message === `Downloaded: ${fileName}`)
+        if (notification) {
+          removeNotification(notification.id)
+        }
       }, 3000)
     })
 
@@ -86,7 +86,7 @@ function App() {
       unsubStatus()
       unsubDownload()
     }
-  }, [])
+  }, [addNotification, removeNotification, notifications])
 
   return (
     <div

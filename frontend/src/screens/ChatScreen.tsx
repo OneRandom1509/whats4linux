@@ -1,47 +1,42 @@
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { GetChatList } from "../../wailsjs/go/api/Api"
 import { api } from "../../wailsjs/go/models"
 import { EventsOn } from "../../wailsjs/runtime/runtime"
 import { ChatDetail } from "./ChatDetail"
-
-type ChatItem = {
-  id: string
-  name: string
-  subtitle: string
-  type: "group" | "contact"
-  timestamp?: number
-  avatar?: string
-}
-
+import { useChatStore } from "../store"
+import type { ChatItem } from "../store/types"
 export function ChatListScreen({ onOpenSettings }: { onOpenSettings: () => void }) {
-  const [chats, setChats] = useState<ChatItem[]>([])
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedChatId, setSelectedChatId] = useState<string | null>(null)
-  const [selectedChatName, setSelectedChatName] = useState<string>("")
-  const [selectedChatAvatar, setSelectedChatAvatar] = useState<string | undefined>(undefined)
+  const {
+    chats,
+    selectedChatId,
+    selectedChatName,
+    selectedChatAvatar,
+    searchTerm,
+    setChats,
+    selectChat,
+    setSearchTerm,
+    clearUnreadCount,
+  } = useChatStore()
 
-  const handleChatSelect = (chat: ChatItem) => {
-    setSelectedChatId(chat.id)
-    setSelectedChatName(chat.name)
-    setSelectedChatAvatar(chat.avatar)
+  const handleChatSelect = (chat: any) => {
+    selectChat(chat)
+    clearUnreadCount(chat.id)
   }
 
   const handleBack = () => {
-    setSelectedChatId(null)
-    setSelectedChatName("")
-    setSelectedChatAvatar(undefined)
+    selectChat(null)
   }
 
   const fetchChats = () => {
     GetChatList()
-      .then((chatElements) => {
+      .then(chatElements => {
         const items: ChatItem[] = (chatElements || []).map((c: api.ChatElement) => {
           const isGroup = c.jid.endsWith("@g.us")
           return {
             id: c.jid,
             name: c.full_name || c.push_name || c.short || c.jid,
             subtitle: c.latest_message || "",
-            type: isGroup ? "group" : "contact",
+            type: (isGroup ? "group" : "contact") as "group" | "contact",
             avatar: c.avatar_url,
           }
         })
@@ -64,7 +59,7 @@ export function ChatListScreen({ onOpenSettings }: { onOpenSettings: () => void 
     fetchChats()
   }, [])
 
-  const filteredChats = chats.filter((c) => c.name.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredChats = chats.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()))
 
   return (
     <div className="flex h-screen bg-light-secondary dark:bg-black overflow-hidden">
@@ -72,7 +67,7 @@ export function ChatListScreen({ onOpenSettings }: { onOpenSettings: () => void 
       <div
         className={`${
           selectedChatId ? "hidden md:flex" : "flex"
-        } flex-col w-full md:w-[400px] border-r border-gray-200 dark:border-dark-tertiary bg-white dark:bg-black h-full`}
+        } flex-col w-full md:w-100 border-r border-gray-200 dark:border-dark-tertiary bg-white dark:bg-black h-full`}
       >
         {/* Header */}
         <div className="h-16 bg-light-secondary dark:bg-dark-secondary flex items-center justify-between px-4 border-b border-gray-200 dark:border-dark-tertiary">
@@ -112,14 +107,14 @@ export function ChatListScreen({ onOpenSettings }: { onOpenSettings: () => void 
               placeholder="Search or start new chat"
               className="bg-transparent border-none outline-none text-sm w-full text-light-text dark:text-dark-text placeholder-gray-500"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
 
         {/* Chat List */}
         <div className="flex-1 overflow-y-auto">
-          {filteredChats.map((chat) => (
+          {filteredChats.map(chat => (
             <div
               key={chat.id}
               onClick={() => handleChatSelect(chat)}
@@ -127,7 +122,7 @@ export function ChatListScreen({ onOpenSettings }: { onOpenSettings: () => void 
                 selectedChatId === chat.id ? "bg-gray-200 dark:bg-[#2a2a2a]" : ""
               }`}
             >
-              <div className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-600 mr-4 flex-shrink-0 overflow-hidden flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-600 mr-4 shrink-0 overflow-hidden flex items-center justify-center">
                 {chat.avatar ? (
                   <img src={chat.avatar} alt={chat.name} className="w-full h-full object-cover" />
                 ) : chat.type === "group" ? (

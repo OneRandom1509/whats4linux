@@ -7,7 +7,7 @@ export function LoginScreen({
 }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-light-secondary dark:bg-dark-bg p-4">
-      <div className="w-full max-w-[900px] h-[520px] bg-white dark:bg-gray-900 rounded-lg shadow-xl flex overflow-hidden border border-gray-100 dark:border-gray-800">
+      <div className="w-full max-w-225 h-130 bg-white dark:bg-gray-900 rounded-lg shadow-xl flex overflow-hidden border border-gray-100 dark:border-gray-800">
         {/* LEFT */}
         <div className="flex-1 p-12 flex flex-col justify-center">
           <div className="flex items-center gap-3 mb-8">
@@ -38,7 +38,7 @@ export function LoginScreen({
         {/* RIGHT */}
         <div className="flex-1 p-12 flex flex-col items-center justify-center border-l border-gray-100 dark:border-gray-800">
           <div className="bg-white p-2 rounded-lg shadow-sm mb-6">
-            <canvas ref={canvasRef} className="w-[264px] h-[264px]" />
+            <canvas ref={canvasRef} className="size-66" />
           </div>
 
           <p className="text-gray-500 dark:text-gray-400 text-center mb-4">

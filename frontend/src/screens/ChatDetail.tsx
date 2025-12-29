@@ -1,15 +1,15 @@
 import { useEffect, useState, useRef } from "react"
 import {
-  FetchMessages,
   DownloadMedia,
   SendMessage,
   GetProfile,
   GetContact,
-  SendChatPresence,
+  FetchMessages,
 } from "../../wailsjs/go/api/Api"
 import { store } from "../../wailsjs/go/models"
 import { EventsOn } from "../../wailsjs/runtime/runtime"
 import EmojiPicker, { Theme } from "emoji-picker-react"
+import { useMessageStore, useUIStore } from "../store"
 
 // WhatsApp-style markdown parser
 function parseWhatsAppMarkdown(text: string): React.ReactNode[] {
@@ -63,7 +63,7 @@ function parseWhatsAppMarkdown(text: string): React.ReactNode[] {
     parts.push(
       <span key={index} style={match.style}>
         {match.content}
-      </span>
+      </span>,
     )
 
     lastIndex = match.end
@@ -85,7 +85,10 @@ interface ChatDetailProps {
 }
 
 export function ChatDetail({ chatId, chatName, chatAvatar, onBack }: ChatDetailProps) {
-  const [messages, setMessages] = useState<store.Message[]>([])
+  const { messages, setMessages } = useMessageStore()
+  const { setTypingIndicator, showEmojiPicker, setShowEmojiPicker } = useUIStore()
+
+  const chatMessages = messages[chatId] || []
   const [inputText, setInputText] = useState("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -94,17 +97,14 @@ export function ChatDetail({ chatId, chatName, chatAvatar, onBack }: ChatDetailP
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [selectedFileType, setSelectedFileType] = useState<string>("")
   const sentMediaCache = useRef<Map<string, string>>(new Map())
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const emojiPickerRef = useRef<HTMLDivElement>(null)
   const emojiButtonRef = useRef<HTMLButtonElement>(null)
 
   const loadMessages = () => {
     FetchMessages(chatId)
-      .then((msgs) => {
-        const unisex = Array.from(new Map((msgs || []).map((m) => [m.Info.ID, m])).values())
-
-        setMessages(unisex)
-        setTimeout(() => scrollToBottom(true), 100)
+      .then((msgs: store.Message[]) => {
+        setMessages(chatId, msgs || [])
+        scrollToBottom(true)
       })
       .catch(console.error)
   }
@@ -119,20 +119,17 @@ export function ChatDetail({ chatId, chatName, chatAvatar, onBack }: ChatDetailP
     setInputText(e.target.value)
     adjustTextareaHeight()
 
-    // Send composing presence (typing)
-    SendChatPresence(chatId, "composing", "").catch(() => {})
+    setTypingIndicator(chatId, true)
 
-    // Clear existing timeout
     if (typingTimeout) {
       clearTimeout(typingTimeout)
     }
 
-    // Set new timeout to send paused presence after 1 seconds of no typing
-    const newTimeout = setTimeout(() => {
-      SendChatPresence(chatId, "paused", "").catch(() => {})
-    }, 1000)
+    const timeout = setTimeout(() => {
+      setTypingIndicator(chatId, false)
+    }, 2000)
 
-    setTypingTimeout(newTimeout)
+    setTypingTimeout(timeout)
   }
 
   // Cleanup timeout on unmount
@@ -147,7 +144,6 @@ export function ChatDetail({ chatId, chatName, chatAvatar, onBack }: ChatDetailP
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
-        showEmojiPicker &&
         emojiPickerRef.current &&
         !emojiPickerRef.current.contains(event.target as Node) &&
         emojiButtonRef.current &&
@@ -157,11 +153,14 @@ export function ChatDetail({ chatId, chatName, chatAvatar, onBack }: ChatDetailP
       }
     }
 
-    document.addEventListener("mousedown", handleClickOutside)
+    if (showEmojiPicker) {
+      document.addEventListener("mousedown", handleClickOutside)
+    }
+
     return () => {
       document.removeEventListener("mousedown", handleClickOutside)
     }
-  }, [showEmojiPicker])
+  }, [showEmojiPicker, setShowEmojiPicker])
 
   const adjustTextareaHeight = () => {
     const textarea = textareaRef.current
@@ -209,18 +208,18 @@ export function ChatDetail({ chatId, chatName, chatAvatar, onBack }: ChatDetailP
             },
           }
         : fileToSend
-        ? {
-            [`${fileTypeToSend}Message`]: {
-              caption: textToSend,
-              _tempFile: fileToSend,
+          ? {
+              [`${fileTypeToSend}Message`]: {
+                caption: textToSend,
+                _tempFile: fileToSend,
+              },
+            }
+          : {
+              conversation: textToSend,
             },
-          }
-        : {
-            conversation: textToSend,
-          },
     }
 
-    setMessages((prev) => [...prev, tempMsg])
+    setMessages(chatId, [...chatMessages, tempMsg])
     setTimeout(scrollToBottom, 100)
 
     try {
@@ -236,7 +235,7 @@ export function ChatDetail({ chatId, chatName, chatAvatar, onBack }: ChatDetailP
         }
       } else if (fileToSend) {
         const reader = new FileReader()
-        reader.onload = async (event) => {
+        reader.onload = async event => {
           const base64 = (event.target?.result as string).split(",")[1]
           const newId = await SendMessage(chatId, {
             type: fileTypeToSend,
@@ -254,7 +253,10 @@ export function ChatDetail({ chatId, chatName, chatAvatar, onBack }: ChatDetailP
       loadMessages()
     } catch (err) {
       console.error("Failed to send message:", err)
-      setMessages((prev) => prev.filter((m) => m.Info.ID !== tempMsg.Info.ID))
+      setMessages(
+        chatId,
+        chatMessages.filter((m: any) => m.Info.ID !== tempMsg.Info.ID),
+      )
       setInputText(textToSend)
       setPastedImage(imageToSend)
       setSelectedFile(fileToSend)
@@ -302,7 +304,7 @@ export function ChatDetail({ chatId, chatName, chatAvatar, onBack }: ChatDetailP
         const file = item.getAsFile()
         if (file) {
           const reader = new FileReader()
-          reader.onload = async (event) => {
+          reader.onload = async event => {
             const base64 = event.target?.result as string
             setPastedImage(base64)
             // Adjust height for the image preview
@@ -366,7 +368,7 @@ export function ChatDetail({ chatId, chatName, chatAvatar, onBack }: ChatDetailP
         className="flex-1 overflow-y-auto p-4 space-y-2 bg-repeat"
         style={{ backgroundImage: "url('/assets/images/bg-chat-tile-dark.png')" }}
       >
-        {messages.map((msg, idx) => (
+        {chatMessages.map((msg, idx) => (
           <MessageItem
             key={msg.Info.ID || idx}
             message={msg}
@@ -384,7 +386,7 @@ export function ChatDetail({ chatId, chatName, chatAvatar, onBack }: ChatDetailP
             <EmojiPicker
               theme={Theme.AUTO}
               onEmojiClick={(emojiData: { emoji: string }) => {
-                setInputText((prev) => prev + emojiData.emoji)
+                setInputText(prev => prev + emojiData.emoji)
                 setShowEmojiPicker(false)
                 textareaRef.current?.focus()
                 setTimeout(adjustTextareaHeight, 0)
@@ -806,9 +808,9 @@ function MessageItem({
 
     content = (
       <div>
-        <div className="flex items-center gap-3 bg-black/5 dark:bg-white/5 p-2 rounded-lg min-w-[240px]">
+        <div className="flex items-center gap-3 bg-black/5 dark:bg-white/5 p-2 rounded-lg min-w-60">
           <div className="w-10 h-12 bg-red-500 rounded-lg flex items-center justify-center text-white font-bold text-xs relative">
-            <div className="absolute top-0 right-0 border-t-[12px] border-r-[12px] border-t-white/20 border-r-transparent"></div>
+            <div className="absolute top-0 right-0 border-t-12 border-r-12 border-t-white/20 border-r-transparent"></div>
             {extension.slice(0, 4)}
           </div>
           <div className="flex-1 min-w-0">
@@ -818,11 +820,11 @@ function MessageItem({
             </div>
           </div>
           <button
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation()
               console.log("Attempting document download:", { chatId, messageId: message.Info.ID })
-              DownloadMedia(chatId, message.Info.ID).catch((err) =>
-                console.error("Document download failed:", err)
+              DownloadMedia(chatId, message.Info.ID).catch(err =>
+                console.error("Document download failed:", err),
               )
             }}
             className="w-10 h-10 flex items-center justify-center border border-gray-300 dark:border-gray-600 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
@@ -857,7 +859,7 @@ function MessageItem({
   } else {
     // Fallback: find the first key that is not null/undefined
     const keys = Object.keys(message.Content || {}).filter(
-      (k) => message.Content && (message.Content as any)[k]
+      k => message.Content && (message.Content as any)[k],
     )
     if (keys.length > 0) {
       content = `Unsupported: ${keys.join(", ")}`
@@ -918,7 +920,7 @@ function MessageItem({
 
         {hasQuote && <QuotedMessage contextInfo={contextInfo} />}
 
-        <div className="text-sm whitespace-pre-wrap break-words">{content}</div>
+        <div className="text-sm whitespace-pre-wrap wrap-break-word">{content}</div>
         <div className="flex justify-end items-center gap-1 mt-1">
           <span className="text-[10px] text-gray-500 dark:text-gray-400">{timeStr}</span>
           {isMe && (
