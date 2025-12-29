@@ -42,7 +42,7 @@ export function MessageItem({ message, chatId, sentMediaCache }: MessageItemProp
             : "bg-white dark:bg-[#202c33] text-gray-900 dark:text-white"
         }`}
       >
-        <p className="break-words">{getMessageContent()}</p>
+        <p className="wrap-break-word">{getMessageContent()}</p>
         <span className="text-xs text-gray-500 dark:text-gray-400 float-right ml-2">
           {timestamp}
         </span>

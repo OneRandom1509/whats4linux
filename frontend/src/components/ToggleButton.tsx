@@ -24,7 +24,7 @@ const Button = ({ onClick }: { onClick: MouseEventHandler<HTMLDivElement> }) => 
   return (
     <div
       className={clsx(
-        "h-7 w-12 rounded-full flex items-center px-1 cursor-pointer",
+        "h-7 w-12 rounded-full flex items-center px-1 cursor-pointer shrink-0",
         isToggled ? "bg-green" : "bg-gray-300",
       )}
       onClick={handleClick}
