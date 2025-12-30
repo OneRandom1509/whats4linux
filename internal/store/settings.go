@@ -21,16 +21,13 @@ var settingsInstance = &settings{
 
 func LoadSettings() {
 	var err error
-	settingsInstance.f, err = os.Open(filepath.Join(misc.ConfigDir, "app_settings.json"))
+	settingsInstance.f, err = os.OpenFile(filepath.Join(misc.ConfigDir, "app_settings.json"), os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		panic(err)
 	}
 
 	decoder := json.NewDecoder(settingsInstance.f)
-	err = decoder.Decode(&settingsInstance.data)
-	if err != nil {
-		panic(err)
-	}
+	_ = decoder.Decode(&settingsInstance.data)
 }
 
 func GetSettings() map[string]any {
