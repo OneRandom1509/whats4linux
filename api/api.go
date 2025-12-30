@@ -311,17 +311,17 @@ func (a *Api) GetChatList() ([]ChatElement, error) {
 			}
 		}
 
-		url, ok := tmpProfileCache.Get(cm.JID.User)
-		if !ok {
-			pic, _ := a.waClient.GetProfilePictureInfo(a.ctx, cm.JID, &whatsmeow.GetProfilePictureParams{
-				Preview: true,
-			})
-			if pic != nil {
-				url = pic.URL
-			}
-			tmpProfileCache.Set(cm.JID.User, url)
-		}
-		fc.AvatarURL = url
+		// url, ok := tmpProfileCache.Get(cm.JID.User)
+		// if !ok {
+		// 	pic, _ := a.waClient.GetProfilePictureInfo(a.ctx, cm.JID, &whatsmeow.GetProfilePictureParams{
+		// 		Preview: true,
+		// 	})
+		// 	if pic != nil {
+		// 		url = pic.URL
+		// 	}
+		// 	tmpProfileCache.Set(cm.JID.User, url)
+		// }
+		// fc.AvatarURL = url
 
 		ce[i] = ChatElement{
 			LatestMessage: cm.MessageText,
