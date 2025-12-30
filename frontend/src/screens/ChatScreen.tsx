@@ -15,7 +15,7 @@ import {
 } from "../assets/svgs/chat_icons"
 import { SearchIcon } from "../assets/svgs/settings_icons"
 
-const USE_SAMPLE_DATA = false
+const USE_SAMPLE_DATA = true
 
 const SAMPLE_CHATS: ChatItem[] = [
   {
@@ -130,7 +130,7 @@ const ChatListItem = ({ chat, isSelected, onSelect }: ChatListItemProps) => (
   <div
     onClick={() => onSelect(chat)}
     className={clsx(
-      "flex items-center p-3 cursor-pointer",
+      "flex items-center p-3 cursor-pointer divide-white/75 divide-y",
       "hover:bg-gray-100 dark:hover:bg-dark-tertiary",
       isSelected && "bg-gray-200 dark:bg-[#2a2a2a]",
     )}
@@ -138,7 +138,7 @@ const ChatListItem = ({ chat, isSelected, onSelect }: ChatListItemProps) => (
     <div className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-600 mr-4 shrink-0 overflow-hidden flex items-center justify-center">
       <ChatAvatar chat={chat} />
     </div>
-    <div className="flex-1 border-b border-gray-100 dark:border-gray-800 pb-3 min-w-0">
+    <div className="flex-1 min-w-0">
       <div className="flex justify-between items-baseline mb-1">
         <h3 className="text-light-text dark:text-dark-text font-medium truncate">{chat.name}</h3>
         <span className="text-xs text-gray-500 dark:text-gray-400">Yesterday</span>
