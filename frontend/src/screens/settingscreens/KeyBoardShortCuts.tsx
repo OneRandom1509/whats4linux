@@ -42,15 +42,15 @@ const shortcuts: Shortcut[] = [
   { name: "Extended search", shortcut: ["Alt", "K"] },
 ]
 
-const SingleShortcut = ({ name, shortcut }: Shortcut) => {
+export const SingleShortcut = ({ name, shortcut }: Shortcut) => {
   return (
     <div className="flex flex-row gap-2 justify-between">
-      <div className="text-white text-xl">{name}</div>
+      <div className="text-black dark:text-white text-xl">{name}</div>
       <div className="flex flex-row gap-1">
         {shortcut.map((key, index) => (
           <div
             key={index}
-            className="bg-shortcut-bg text-shortcut-text border border-shortcut-border rounded-xl px-2 py-1 w-fit"
+            className="bg-shortcut-bg dark:bg-shortcut-dark-bg text-shortcut-text dark:text-shortcut-dark-text border border-shortcut-border rounded-xl px-2 py-1 w-fit"
           >
             {key}
           </div>
