@@ -24,7 +24,18 @@ export interface MessageListHandle {
 const MemoizedMessageItem = memo(MessageItem)
 
 export const MessageList = forwardRef<MessageListHandle, MessageListProps>(function MessageList(
-  { chatId, messages, sentMediaCache, onReply, onLoadMore, onPrefetch, onTrimOldMessages, firstItemIndex, isLoading, hasMore },
+  {
+    chatId,
+    messages,
+    sentMediaCache,
+    onReply,
+    onLoadMore,
+    onPrefetch,
+    onTrimOldMessages,
+    firstItemIndex,
+    isLoading,
+    hasMore,
+  },
   ref,
 ) {
   const virtuosoRef = useRef<VirtuosoHandle>(null)
