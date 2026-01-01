@@ -109,6 +109,44 @@ func (ms *MessageStore) GetMessages(jid types.JID) []Message {
 	return ml
 }
 
+func getMessageArrayFromRows(rows *sql.Rows) []Message {
+	var (
+		messages []Message
+		chat     string
+		msgID    string
+		ts       int64
+		minf     []byte
+		raw      []byte
+	)
+
+	for rows.Next() {
+		minf = minf[:0]
+		raw = raw[:0]
+
+		if err := rows.Scan(&chat, &msgID, &ts, &minf, &raw); err != nil {
+			continue
+		}
+
+		var messageInfo types.MessageInfo
+		if err := gobDecode(minf, &messageInfo); err != nil {
+			continue
+		}
+
+		var waMsg *waE2E.Message
+		waMsg, err := unmarshalMessageContent(raw)
+		if err != nil {
+			continue
+		}
+
+		messages = append(messages, Message{
+			Info:    messageInfo,
+			Content: waMsg,
+		})
+	}
+
+	return messages
+}
+
 // GetMessagesPaged returns a page of messages for a chat
 // beforeTimestamp: only return messages before this timestamp (0 = latest)
 // limit: max number of messages to return
@@ -128,89 +166,10 @@ func (ms *MessageStore) GetMessagesPaged(jid types.JID, beforeTimestamp int64, l
 	if err != nil {
 		return []Message{}
 	}
+
 	defer rows.Close()
 
-	var messages []Message
-	for rows.Next() {
-		var (
-			chat  string
-			msgID string
-			ts    int64
-			minf  []byte
-			raw   []byte
-		)
-
-		if err := rows.Scan(&chat, &msgID, &ts, &minf, &raw); err != nil {
-			continue
-		}
-
-		var messageInfo types.MessageInfo
-		if err := gobDecode(minf, &messageInfo); err != nil {
-			continue
-		}
-
-		var waMsg *waE2E.Message
-		waMsg, err = unmarshalMessageContent(raw)
-		if err != nil {
-			continue
-		}
-
-		messages = append(messages, Message{
-			Info:    messageInfo,
-			Content: waMsg,
-		})
-		ms.mCache.Set(msgID, 1)
-	}
-
-	return messages
-}
-
-// loadAndCacheAllMessages loads all messages for a chat from DB and caches them
-func (ms *MessageStore) loadAndCacheAllMessages(jid types.JID) []Message {
-	rows, err := ms.db.Query(query.SelectMessagesByChat, jid.String())
-	if err != nil {
-		return []Message{}
-	}
-	defer rows.Close()
-
-	var messages []Message
-	for rows.Next() {
-		var (
-			chat  string
-			msgID string
-			ts    int64
-			minf  []byte
-			raw   []byte
-		)
-
-		if err := rows.Scan(&chat, &msgID, &ts, &minf, &raw); err != nil {
-			continue
-		}
-
-		var messageInfo types.MessageInfo
-		if err := gobDecode(minf, &messageInfo); err != nil {
-			continue
-		}
-
-		var waMsg *waE2E.Message
-		waMsg, err = unmarshalMessageContent(raw)
-		if err != nil {
-			continue
-		}
-
-		messages = append(messages, Message{
-			Info:    messageInfo,
-			Content: waMsg,
-		})
-		ms.mCache.Set(msgID, 1)
-	}
-
-	// Cache the loaded messages
-	if len(messages) > 0 {
-		ms.msgMap.Set(jid.User, messages)
-	}
-
-	return messages
+	return getMessageArrayFromRows(rows)
 }
 
 // loadMessagesFromDBForChat loads messages for a specific chat from DB
@@ -221,38 +180,7 @@ func (ms *MessageStore) loadMessagesFromDBForChat(jid types.JID) []Message {
 	}
 	defer rows.Close()
 
-	var messages []Message
-	for rows.Next() {
-		var (
-			chat  string
-			msgID string
-			ts    int64
-			minf  []byte
-			raw   []byte
-		)
-
-		if err := rows.Scan(&chat, &msgID, &ts, &minf, &raw); err != nil {
-			continue
-		}
-
-		var messageInfo types.MessageInfo
-		if err := gobDecode(minf, &messageInfo); err != nil {
-			continue
-		}
-
-		var waMsg *waE2E.Message
-		waMsg, err = unmarshalMessageContent(raw)
-		if err != nil {
-			continue
-		}
-
-		messages = append(messages, Message{
-			Info:    messageInfo,
-			Content: waMsg,
-		})
-		ms.mCache.Set(msgID, 1)
-	}
-	return messages
+	return getMessageArrayFromRows(rows)
 }
 
 // GetTotalMessageCount returns the total number of messages in a chat
@@ -294,14 +222,18 @@ func (ms *MessageStore) GetChatList() []ChatMessage {
 	defer rows.Close()
 
 	var chatList []ChatMessage
+
+	var (
+		chat  string
+		msgID string
+		ts    int64
+		minf  []byte
+		raw   []byte
+	)
+
 	for rows.Next() {
-		var (
-			chat  string
-			msgID string
-			ts    int64
-			minf  []byte
-			raw   []byte
-		)
+		minf = minf[:0]
+		raw = raw[:0]
 
 		if err := rows.Scan(&chat, &msgID, &ts, &minf, &raw); err != nil {
 			continue
