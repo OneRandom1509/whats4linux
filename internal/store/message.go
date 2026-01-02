@@ -71,7 +71,6 @@ func (ms *MessageStore) ProcessMessageEvent(msg *events.Message) {
 		Content: msg.Message,
 	}
 
-	
 	// Update chatListMap with the new latest message
 	var messageText string
 	if m.Content.GetConversation() != "" {
@@ -211,7 +210,7 @@ func (ms *MessageStore) GetMessage(chatJID types.JID, messageID string) *Message
 
 // GetMessageByID searches for a message by ID across all chats
 func (ms *MessageStore) GetMessageByID(messageID string) *Message {
-	
+
 	// Query database
 	var chat, msgID string
 	var ts int64
