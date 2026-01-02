@@ -228,7 +228,10 @@ export function ChatDetail({ chatId, chatName, chatAvatar, onBack }: ChatDetailP
         <button
           ref={scrollButtonRef}
           onClick={() => scrollToBottom(false)}
-          className="absolute bottom-4 right-8 bg-white dark:bg-received-bubble-dark-bg p-2 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 z-100 hover:bg-gray-100 dark:hover:bg-[#2a3942]"
+          className={clsx(
+            "absolute bottom-4 right-8 bg-white dark:bg-received-bubble-dark-bg p-2 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 z-100 hover:bg-gray-100 dark:hover:bg-[#2a3942]",
+            isAtBottom && "pointer-events-none",
+          )}
         >
           <svg
             viewBox="0 0 24 24"
