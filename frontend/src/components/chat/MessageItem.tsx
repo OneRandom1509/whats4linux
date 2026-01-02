@@ -185,7 +185,17 @@ export function MessageItem({ message, chatId, sentMediaCache, onReply }: Messag
           {doc.caption && <div className="mt-1">{parseWhatsAppMarkdown(doc.caption)}</div>}
         </div>
       )
-    } else return <span className="italic opacity-50 text-xs">Unsupported Message Type</span>
+    } else if (content.senderKeyDistributionMessage) {
+      return <span className="italic opacity-50 text-xs">Encryption Info Message</span>
+    } else if (content.reactionMessage) {
+      return (
+        <span className="italic opacity-50 text-xs">
+          Reaction: {content.reactionMessage.text} to message ID {content.reactionMessage.key?.ID}
+        </span>
+      )
+    }
+    console.log("Unsupported message content:", content)
+    return <span className="italic opacity-50 text-xs">Unsupported Message Type</span>
   }
 
   return (

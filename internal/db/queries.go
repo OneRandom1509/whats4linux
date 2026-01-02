@@ -42,39 +42,36 @@ const (
 	`
 
 	InsertMessage = `
-	INSERT OR IGNORE INTO messages
+	INSERT INTO messages
 	(chat, message_id, timestamp, msg_info, raw_message)
 	VALUES (?, ?, ?, ?, ?)
 	`
 
-	SelectAllMessages = `
-	SELECT chat, message_id, timestamp, msg_info, raw_message
-	FROM messages
-	ORDER BY timestamp ASC
-	`
-
-	SelectMessagesByChat = `
-	SELECT chat, message_id, timestamp, msg_info, raw_message
-	FROM messages
-	WHERE chat = ?
-	ORDER BY timestamp ASC
+	UpdateMessage = `
+	UPDATE messages
+	SET msg_info = ?, raw_message = ?
+	WHERE message_id = ?;
 	`
 
 	SelectChatList = `
-	SELECT chat, message_id, timestamp, msg_info, raw_message
-	FROM messages
-	WHERE (chat, timestamp) IN (
-		SELECT chat, MAX(timestamp)
+	SELECT chat, timestamp, msg_info, raw_message
+	FROM (
+		SELECT 
+			chat, timestamp, msg_info, raw_message,
+			ROW_NUMBER() OVER (
+				PARTITION BY chat
+				ORDER BY timestamp DESC, rowid DESC
+			) AS rn
 		FROM messages
-		GROUP BY chat
 	)
-	ORDER BY timestamp DESC
+	WHERE rn = 1
+	ORDER BY timestamp DESC;
 	`
 
 	SelectMessagesByChatBeforeTimestamp = `
-	SELECT chat, message_id, timestamp, msg_info, raw_message
+	SELECT msg_info, raw_message, timestamp
 	FROM (
-		SELECT chat, message_id, timestamp, msg_info, raw_message
+		SELECT msg_info, raw_message, timestamp
 		FROM messages
 		WHERE chat = ? AND timestamp < ?
 		ORDER BY timestamp DESC
@@ -84,9 +81,9 @@ const (
 	`
 
 	SelectLatestMessagesByChat = `
-	SELECT chat, message_id, timestamp, msg_info, raw_message
+	SELECT msg_info, raw_message, timestamp
 	FROM (
-		SELECT chat, message_id, timestamp, msg_info, raw_message
+		SELECT msg_info, raw_message, timestamp
 		FROM messages
 		WHERE chat = ?
 		ORDER BY timestamp DESC
